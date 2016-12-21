@@ -22,6 +22,10 @@ check:
 	@# TODO: remove true once we make pylint happy
 	py.test -vvl --timeout=2 test -p no:celery && ( pylint selinonlib || true )
 
+devenv:
+	@echo "Installing latest development requirements"
+	pip3 install -U -r dev_requirements.txt
+
 venv:
 	python3 -m venv venv && source venv/bin/activate && pip3 install -r requirements.txt
 	@echo "Run 'source venv/bin/activate' to enter virtual environment and 'deactivate' to return from it"
