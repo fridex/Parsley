@@ -17,9 +17,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""Edge representation in task/flow dependency graph"""
 
 from .predicate import Predicate
-from .buildinPredicate import AlwaysTruePredicate
+from .builtinPredicate import AlwaysTruePredicate
 
 
 class Edge(object):
@@ -61,7 +62,7 @@ class Edge(object):
 
                 if (isinstance(self.flow.propagate_node_args, bool) and self.flow.propagate_node_args) \
                         or (isinstance(self.flow.propagate_node_args, list)
-                            and node_to.name in self.flow.propagate_node_args):
+                                and node_to.name in self.flow.propagate_node_args):
                     raise ValueError("Cannot propagate node arguments to subflow when propagate_result is set"
                                      " in foreach definition in flow '%s' for node to '%s'"
                                      % (self.flow.name, node_to.name))
@@ -76,42 +77,42 @@ class Edge(object):
             return None
 
     @staticmethod
-    def from_dict(d, system, flow):
+    def from_dict(dict_, system, flow):  # pylint: disable=too-many-branches
         """
         Construct edge from a dict
 
-        :param d: a dictionary from which the system should be created
-        :type d: dict
+        :param dict_: a dictionary from which the system should be created
+        :type dict_: dict
         :param system:
         :type system: System
         :param flow: flow to which edge belongs to
         :type flow: Flow
         :return:
         """
-        if 'from' not in d:
+        if 'from' not in dict_:
             raise ValueError("Edge definition requires 'from' explicitly to be specified, use empty for starting edge")
 
         # we allow empty list for a starting edge
-        if d['from']:
-            from_names = d['from'] if isinstance(d['from'], list) else [d['from']]
+        if dict_['from']:
+            from_names = dict_['from'] if isinstance(dict_['from'], list) else [dict_['from']]
             nodes_from = [system.node_by_name(n) for n in from_names]
         else:
             nodes_from = []
 
-        if 'to' not in d or not d['to']:
+        if 'to' not in dict_ or not dict_['to']:
             raise ValueError("Edge definition requires 'to' specified")
 
-        to_names = d['to'] if isinstance(d['to'], list) else [d['to']]
+        to_names = dict_['to'] if isinstance(dict_['to'], list) else [dict_['to']]
         nodes_to = [system.node_by_name(n) for n in to_names]
 
-        if 'condition' in d:
-            predicate = Predicate.construct(d.get('condition'), nodes_from, flow)
+        if 'condition' in dict_:
+            predicate = Predicate.construct(dict_.get('condition'), nodes_from, flow)
         else:
             predicate = AlwaysTruePredicate(flow=flow)
 
         foreach = None
-        if 'foreach' in d:
-            foreach_def = d['foreach']
+        if 'foreach' in dict_:
+            foreach_def = dict_['foreach']
             if foreach_def is None or 'function' not in foreach_def or 'import' not in foreach_def:
                 raise ValueError("Specification of 'foreach' requires 'function' and 'import' to be set in flow '%s',"
                                  " got %s instead" % (flow.name, foreach_def))

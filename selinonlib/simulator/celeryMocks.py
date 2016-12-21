@@ -28,7 +28,7 @@ class SimulateRequest(object):
     """Simulate Celery's Task.request in order to be able to query task id right inside task by calling
     self.request.id"""
     def __init__(self, instance):
-        self.id = str(id(instance))
+        self.id = str(id(instance))  # pylint: disable=redefined-builtin,invalid-name
 
 
 class SimulateAsyncResult(object):
@@ -36,7 +36,7 @@ class SimulateAsyncResult(object):
     task_failures = {}
     task_successes = {}
 
-    def __init__(self, id):
+    def __init__(self, id):  # pylint: disable=redefined-builtin,invalid-name
         self.task_id = str(id)
 
     @classmethod
@@ -80,6 +80,7 @@ class SimulateAsyncResult(object):
 class SimulateRetry(Exception):
     """Simulate Celery Retry exception raised by self.retry()"""
     def __init__(self, instance, **celery_kwargs):
+        super().__init__()
         self.instance = instance
         self.celery_kwargs = celery_kwargs
 
@@ -104,4 +105,3 @@ def simulate_retry(instance, **celery_kwargs):
     :param celery_kwargs: kwargs that will be supplied to Celery Task (also carry arguments for Selinon)
     """
     raise SimulateRetry(instance, **celery_kwargs)
-

@@ -17,6 +17,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""
+Random replacement cache implementation
+"""
 
 import random
 from .cache import Cache
@@ -35,6 +38,9 @@ class RR(Cache):
 
     @property
     def current_cache_size(self):
+        """
+        :return: current cache size
+        """
         return len(list(self._cache.keys()))
 
     def __repr__(self):
@@ -72,4 +78,3 @@ class RR(Cache):
             raise CacheMissError()
 
         return self._cache[item_id]
-

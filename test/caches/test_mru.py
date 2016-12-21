@@ -112,4 +112,3 @@ class TestMRU(object):
 
         # last inserted when adding 5 dummy elements
         assert cache.get(500, "Task1", "flow1") == self._item_id2item(500)
-

@@ -17,41 +17,42 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""Selinonlib library helpers"""
 
 import os
 import sys
 import ast
 import json
-from dill.source import getsource
 from contextlib import contextmanager
+from dill.source import getsource
 
 
-def dict2strkwargs(d):
+def dict2strkwargs(dict_):
     """
     Convert a dictionary into arguments to a string representation that can be used as arguments to a function
     """
     ret = ""
-    for k, v in d.items():
+    for key, value in dict_.items():
         if len(ret) > 0:
             ret += ", "
-        ret += "%s=%s" % (k, expr2str(v))
+        ret += "%s=%s" % (key, expr2str(value))
     return ret
 
 
-def expr2str(e):
+def expr2str(expr):
     """
     Convert a Python expression into a Python code
     """
-    if isinstance(e, dict):
-        return str(e)
-    elif isinstance(e, list):
+    if isinstance(expr, dict):
+        return str(expr)
+    elif isinstance(expr, list):
         # s/'['foo']['bar']'/['foo']['bar']/ (get rid of leading ')
-        return "%s" % e
-    elif isinstance(e, str):
-        return "'%s'" % e
+        return "%s" % expr
+    elif isinstance(expr, str):
+        return "'%s'" % expr
     else:
         # some build in type such as bool/int/...
-        return "%s" % str(e)
+        return "%s" % str(expr)
 
 
 def keylist2str(keylist):
@@ -82,20 +83,20 @@ def pushd(new_dir):
         os.chdir(prev_dir)
 
 
-def dict2json(o, pretty=True):
+def dict2json(dict_, pretty=True):
     """
     Convert dict to json (string)
 
-    :param o: dictionary to be converted
+    :param dict_: dictionary to be converted
     :param pretty: if True, nice formatting will be used
     :type pretty: bool
     :return: formatted dict in json
     :rtype: str
     """
     if pretty is True:
-        return json.dumps(o, sort_keys=True, separators=(',', ': '), indent = 2)
+        return json.dumps(dict_, sort_keys=True, separators=(',', ': '), indent=2)
     else:
-        return json.dumps(o)
+        return json.dumps(dict_)
 
 
 def get_function_arguments(function):
@@ -120,4 +121,3 @@ def get_function_arguments(function):
             ret.append(arg.arg)
 
     return ret
-

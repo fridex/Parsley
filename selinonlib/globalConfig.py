@@ -17,8 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
-
-# Celery's default queue
+"""User's global configuration section parsed from YAML config file"""
 
 
 class GlobalConfig(object):
@@ -100,18 +99,18 @@ class GlobalConfig(object):
             cls._trace_function = trace_record['function']
 
     @classmethod
-    def from_dict(cls, system, d):
+    def from_dict(cls, system, dict_):
         """
         Parse global configuration from a dictionary
 
         :param system: system instance for storage lookup
-        :param d: dictionary containing global configuration as stated in YAML config file
+        :param dict_: dictionary containing global configuration as stated in YAML config file
         """
-        if 'predicates_module' in d:
-            cls.predicates_module = d['predicates_module']
+        if 'predicates_module' in dict_:
+            cls.predicates_module = dict_['predicates_module']
 
-        if 'trace' in d:
-            cls._parse_trace(system, d['trace'])
+        if 'trace' in dict_:
+            cls._parse_trace(system, dict_['trace'])
 
-        cls.default_dispatcher_queue = d.get('default_dispatcher_queue', cls.DEFAULT_CELERY_QUEUE)
-        cls.default_task_queue = d.get('default_task_queue', cls.DEFAULT_CELERY_QUEUE)
+        cls.default_dispatcher_queue = dict_.get('default_dispatcher_queue', cls.DEFAULT_CELERY_QUEUE)
+        cls.default_task_queue = dict_.get('default_task_queue', cls.DEFAULT_CELERY_QUEUE)

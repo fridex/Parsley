@@ -82,4 +82,3 @@ class TestCache(object):
 
         for item_id in range(item_count - 1, -1, -1):
             assert cache.get(item_id, "Task1", "flow1") == self._item_id2item(item_id)
-

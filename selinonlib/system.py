@@ -17,14 +17,15 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""Core Selinonlib logic - system representation, parsing and hanling actions"""
 
-import codegen
-import graphviz
 import os
-import yaml
+import datetime
 import platform
 import logging
-from datetime import datetime
+import codegen
+import graphviz
+import yaml
 from .task import Task
 from .storage import Storage
 from .flow import Flow
@@ -34,15 +35,24 @@ from .helpers import dict2strkwargs, expr2str
 from .taskClass import TaskClass
 from .globalConfig import GlobalConfig
 
-
-_logger = logging.getLogger(__name__)
+# pylint: disable=too-many-locals,too-many-nested-blocks,too-many-boolean-expressions
 
 
 class System(object):
     """
     The representation of the whole system
     """
+
+    _logger = logging.getLogger(__name__)
+
     def __init__(self, tasks=None, flows=None, storages=None, task_classes=None):
+        """
+        :param tasks: a list of tasks available in the system
+        :param flows: a list of flows available in the system
+        :param storages: a list of storages available in the system
+        :param task_classes: a list of classes that implement task logic (the same Python class can be represented
+                             in multiple Selinon tasks)
+        """
         self.flows = flows or []
         self.tasks = tasks or []
         self.storages = storages or []
@@ -250,19 +260,34 @@ class System(object):
                 printed = True
         output.write('\n}\n\n')
 
-    def _dump_flow_flags(self, f):
+    def _dump_flow_flags(self, stream):
         """
         Dump various flow flags
 
-        :param f: a stream to write to
+        :param stream: a stream to write to
         """
-        self._dump_dict(f, 'node_args_from_first', [{f.name: f.node_args_from_first} for f in self.flows])
-        self._dump_dict(f, 'propagate_node_args', [{f.name: f.propagate_node_args} for f in self.flows])
-        self._dump_dict(f, 'propagate_finished', [{f.name: f.propagate_finished} for f in self.flows])
-        self._dump_dict(f, 'propagate_parent', [{f.name: f.propagate_parent} for f in self.flows])
-        self._dump_dict(f, 'propagate_compound_finished', [{f.name: f.propagate_compound_finished} for f in self.flows])
+        self._dump_dict(stream,
+                        'node_args_from_first',
+                        [{f.name: f.node_args_from_first} for f in self.flows])
 
-    def _dump_dict(self, output, dict_name, dict_items):
+        self._dump_dict(stream,
+                        'propagate_node_args',
+                        [{f.name: f.propagate_node_args} for f in self.flows])
+
+        self._dump_dict(stream,
+                        'propagate_finished',
+                        [{f.name: f.propagate_finished} for f in self.flows])
+
+        self._dump_dict(stream,
+                        'propagate_parent',
+                        [{f.name: f.propagate_parent} for f in self.flows])
+
+        self._dump_dict(stream,
+                        'propagate_compound_finished',
+                        [{f.name: f.propagate_compound_finished} for f in self.flows])
+
+    @staticmethod
+    def _dump_dict(output, dict_name, dict_items):
         """
         Dump propagate_finished flag configuration to a stream
 
@@ -343,10 +368,10 @@ class System(object):
         output.write('storage2instance_mapping = {\n')
         printed = False
         for storage_var_name in storage_var_names:
-                if printed:
-                    output.write(",\n")
-                output.write("    '%s': %s" % (storage_var_name[0], storage_var_name[1]))
-                printed = True
+            if printed:
+                output.write(",\n")
+            output.write("    '%s': %s" % (storage_var_name[0], storage_var_name[1]))
+            printed = True
 
         output.write("\n}\n\n")
 
@@ -387,10 +412,10 @@ class System(object):
 
         :param output: a stream to write to
         """
-        def strategy_func_name(flow):
+        def strategy_func_name(flow):  # pylint: disable=missing-docstring
             return "_strategy_func_%s" % flow.name
 
-        def strategy_func_import_name(flow):
+        def strategy_func_import_name(flow):  # pylint: disable=missing-docstring
             return "_raw_strategy_func_%s" % flow.name
 
         strategy_dict = {}
@@ -510,7 +535,7 @@ class System(object):
         printed = False
         for flow in self.flows:
             if printed:
-                    output.write(',\n')
+                output.write(',\n')
             output.write("    '%s': %s" % (flow.name, [node.name for node in flow.nowait_nodes]))
             printed = True
 
@@ -558,57 +583,57 @@ class System(object):
                 output.write(']\n')
         output.write('}\n\n')
 
-    def dump2stream(self, f):
+    def dump2stream(self, stream):
         """
         Perform system dump to a Python source code to an output stream
 
-        :param f: an output stream to write to
+        :param stream: an output stream to write to
         """
-        f.write('#!/usr/bin/env python3\n')
-        f.write('# auto-generated using Selinonlib v{} on {} at {}\n\n'.format(selinonlib_version,
-                                                                               platform.node(),
-                                                                               str(datetime.utcnow())))
-        self._dump_imports(f)
-        self._dump_strategy_func(f)
-        self._dump_task_classes(f)
-        self._dump_storage_task_names(f)
-        self._dump_queues(f)
-        f.write('#'*80+'\n\n')
-        self._dump_storage_conf(f)
-        f.write('#'*80+'\n\n')
-        self._dump_output_schemas(f)
-        f.write('#'*80+'\n\n')
-        self._dump_flow_flags(f)
-        self._dump_throttle(f)
-        f.write('#'*80+'\n\n')
-        self._dump_max_retry(f)
-        self._dump_retry_countdown(f)
-        self._dump_storage_readonly(f)
-        f.write('#'*80+'\n\n')
+        stream.write('#!/usr/bin/env python3\n')
+        stream.write('# auto-generated using Selinonlib v{} on {} at {}\n\n'.format(selinonlib_version,
+                                                                                    platform.node(),
+                                                                                    str(datetime.datetime.utcnow())))
+        self._dump_imports(stream)
+        self._dump_strategy_func(stream)
+        self._dump_task_classes(stream)
+        self._dump_storage_task_names(stream)
+        self._dump_queues(stream)
+        stream.write('#'*80+'\n\n')
+        self._dump_storage_conf(stream)
+        stream.write('#'*80+'\n\n')
+        self._dump_output_schemas(stream)
+        stream.write('#'*80+'\n\n')
+        self._dump_flow_flags(stream)
+        self._dump_throttle(stream)
+        stream.write('#'*80+'\n\n')
+        self._dump_max_retry(stream)
+        self._dump_retry_countdown(stream)
+        self._dump_storage_readonly(stream)
+        stream.write('#'*80+'\n\n')
 
         for flow in self.flows:
             if flow.failures:
-                flow.failures.dump2stream(f, flow.name)
+                flow.failures.dump2stream(stream, flow.name)
 
-        f.write('failures = {')
+        stream.write('failures = {')
         printed = False
-        for i, flow in enumerate(self.flows):
+        for flow in self.flows:
             if flow.failures:
                 if printed:
-                    f.write(",")
+                    stream.write(",")
                 printed = True
-                f.write("\n    '%s': %s" % (flow.name, flow.failures.starting_nodes_name(flow.name)))
-        f.write('\n}\n\n')
+                stream.write("\n    '%s': %s" % (flow.name, flow.failures.starting_nodes_name(flow.name)))
+        stream.write('\n}\n\n')
 
-        f.write('#'*80+'\n\n')
-        self._dump_nowait_nodes(f)
-        f.write('#'*80+'\n\n')
-        self._dump_init(f)
-        f.write('#'*80+'\n\n')
-        self._dump_condition_functions(f)
-        f.write('#'*80+'\n\n')
-        self._dump_edge_table(f)
-        f.write('#'*80+'\n\n')
+        stream.write('#'*80+'\n\n')
+        self._dump_nowait_nodes(stream)
+        stream.write('#'*80+'\n\n')
+        self._dump_init(stream)
+        stream.write('#'*80+'\n\n')
+        self._dump_condition_functions(stream)
+        stream.write('#'*80+'\n\n')
+        self._dump_edge_table(stream)
+        stream.write('#'*80+'\n\n')
 
     def dump2file(self, output_file):
         """
@@ -616,11 +641,11 @@ class System(object):
 
         :param output_file: an output file to write to
         """
-        _logger.debug("Performing system dump to '%s'" % output_file)
-        with open(output_file, 'w') as f:
-            self.dump2stream(f)
+        self._logger.debug("Performing system dump to '%s'", output_file)
+        with open(output_file, 'w') as stream:
+            self.dump2stream(stream)
 
-    def plot_graph(self, output_dir, image_format=None):
+    def plot_graph(self, output_dir, image_format=None):  # pylint: disable=too-many-statements,too-many-branches
         """
         Plot system flows to graphs - each flow in a separate file
 
@@ -630,7 +655,7 @@ class System(object):
         :rtype: List[str]
         """
         # TODO: this method needs to be refactored
-        _logger.debug("Rendering system flows to '%s'" % output_dir)
+        self._logger.debug("Rendering system flows to '%s'", output_dir)
         ret = []
         image_format = image_format if image_format else 'svg'
 
@@ -723,7 +748,9 @@ class System(object):
                                     if node.storage:
                                         graph.node(name=node.storage.name, _attributes=Config().style_storage())
                                         if (node.name, node.storage.name) not in storage_connections:
-                                            graph.edge(node.name, node.storage.name, _attributes=Config().style_store_edge())
+                                            graph.edge(node.name,
+                                                       node.storage.name,
+                                                       _attributes=Config().style_store_edge())
                                             storage_connections.append((node.name, node.storage.name,))
 
                                 graph.edge(str(id(failure)), node_name, _attributes=Config().style_fallback_edge())
@@ -731,7 +758,7 @@ class System(object):
             file = os.path.join(output_dir, "%s" % flow.name)
             graph.render(filename=file, cleanup=True)
             ret.append(file)
-            _logger.info("Graph rendered to '%s.%s'" % (file, image_format))
+            self._logger.info("Graph rendered to '%s.%s'", file, image_format)
 
         return ret
 
@@ -741,38 +768,38 @@ class System(object):
 
         :raises: ValueError
         """
-        _logger.debug("Post parse check is going to be executed")
+        self._logger.debug("Post parse check is going to be executed")
         # we want to have circular dependencies, so we need to check consistency after parsing since all flows
         # are listed (by names) in a separate definition
         for flow in self.flows:
             if len(flow.edges) == 0:
                 raise ValueError("Empty flow: %s" % flow.name)
 
-    def _check(self):
+    def _check(self):  # pylint: disable=too-many-statements,too-many-branches
         """
         Check system for consistency
 
         :raises: ValueError
         """
-        _logger.info("Checking system for consistency")
+        self._logger.info("Checking system for consistency")
 
         for task_class in self.task_classes:
             task_ref = task_class.tasks[0]
             for task in task_class.tasks[1:]:
                 if task_ref.output_schema != task.output_schema:
-                    _logger.warning("Different output schemas to a same task class: %s and %s for class '%s', "
-                                    "schemas: '%s' and '%s' might differ"
-                                    % (task_ref.name, task.name, task_class.class_name,
-                                       task_ref.output_schema, task.output_schema))
+                    self._logger.warning("Different output schemas to a same task class: %s and %s for class '%s', "
+                                         "schemas: '%s' and '%s' might differ",
+                                         task_ref.name, task.name, task_class.class_name,
+                                         task_ref.output_schema, task.output_schema)
 
                 if task.max_retry != task_ref.max_retry:
-                    _logger.warning("Different max_retry assigned to a same task class: %s and %s for class '%s'"
-                                    % ((task.name, task.max_retry), (task_ref.name, task_ref.max_retry),
-                                       task_class.class_name))
+                    self._logger.warning("Different max_retry assigned to a same task class: %s and %s for class '%s'",
+                                         (task.name, task.max_retry), (task_ref.name, task_ref.max_retry),
+                                         task_class.class_name)
 
         for storage in self.storages:
             if len(storage.tasks) == 0:
-                _logger.warning("Storage '{}' not used in any flow".format(storage.name))
+                self._logger.warning("Storage '%s' not used in any flow", storage.name)
 
         # We want to check that if we depend on a node, that node is being started at least once in the flow
         # This also covers check for starting node definition
@@ -810,7 +837,7 @@ class System(object):
                     edge.predicate.check()
 
                 if starting_edges_count > 1:
-                    _logger.warning("Multiple starting nodes defined in flow '%s'" % flow.name)
+                    self._logger.warning("Multiple starting nodes defined in flow '%s'", flow.name)
 
                     if flow.node_args_from_first:
                         raise ValueError("Cannot propagate node arguments from multiple starting nodes")
@@ -835,11 +862,12 @@ class System(object):
                         if node.is_flow():
                             affected_edges = [edge for edge in flow.edges if node in edge.nodes_from]
                             for affected_edge in affected_edges:
-                                f = [n for n in affected_edge.nodes_to if n.is_flow()]
+                                f = [n for n in affected_edge.nodes_to if n.is_flow()]  # pylint: disable=invalid-name
                                 if len(f) == 1 and not flow.should_propagate_parent(f[0]):
-                                    _logger.warn("Flow '%s' marked in propagate_finished, but calculated "
-                                                 "finished nodes are not passed to sub-flow '%s' due to not "
-                                                 "propagating parent, in flow '%s'" % (node.name, f[0].name, flow.name))
+                                    self._logger.warning("Flow '%s' marked in propagate_finished, but calculated "
+                                                         "finished nodes are not passed to sub-flow '%s' due to not "
+                                                         "propagating parent, in flow '%s'",
+                                                         node.name, f[0].name, flow.name)
 
                 if isinstance(flow.propagate_compound_finished, list):
                     for node in flow.propagate_compound_finished:
@@ -853,11 +881,12 @@ class System(object):
                         if node.is_flow():
                             affected_edges = [edge for edge in flow.edges if node in edge.nodes_from]
                             for affected_edge in affected_edges:
-                                f = [n for n in affected_edge.nodes_to if n.is_flow()]
+                                f = [n for n in affected_edge.nodes_to if n.is_flow()]  # pylint: disable=invalid-name
                                 if len(f) == 1 and not flow.should_propagate_parent(f[0]):
-                                    _logger.warn("Flow '%s' marked in propagate_compound_finished, but calculated "
-                                                 "finished nodes are not passed to sub-flow '%s' due to not "
-                                                 "propagating parent, in flow '%s'" % (node.name, f[0].name, flow.name))
+                                    self._logger.warning("Flow '%s' marked in propagate_compound_finished, but "
+                                                         "calculated finished nodes are not passed to sub-flow '%s' "
+                                                         "due to not propagating parent, in flow '%s'",
+                                                         node.name, f[0].name, flow.name)
 
                 if isinstance(flow.propagate_parent, list):
                     for node in flow.propagate_parent:
@@ -873,7 +902,7 @@ class System(object):
                                              "propagate_compound_finished at the same time in flow '%s'"
                                              % (node.name, flow.name))
                 else:
-                    if (flow.propagate_finished is True and flow.propagate_compound_finished is True) \
+                    if (flow.propagate_finished is True and flow.propagate_compound_finished is True)  \
                           or (flow.propagate_finished is True and isinstance(flow.propagate_compound_finished, list)) \
                           or (isinstance(flow.propagate_finished, list) and flow.propagate_compound_finished is True):
                         raise ValueError("Flags propagate_compound_finished and propagate_finished are disjoint,"
@@ -885,18 +914,18 @@ class System(object):
                 error = False
                 for node in not_started:
                     if node.is_task():
-                        _logger.error("Dependency in flow '%s' on node '%s', but this node is not started in the flow"
-                                      % (flow.name, node.name))
+                        self._logger.error("Dependency in flow '%s' on node '%s', but this node is not started "
+                                           "in the flow", flow.name, node.name)
                         error = True
 
                 if error:
                     raise ValueError("Dependency on not started node detected in flow '%s'" % flow.name)
             except:
-                _logger.error("Check of flow '%s' failed" % flow.name)
+                self._logger.error("Check of flow '%s' failed", flow.name)
                 raise
 
-    @staticmethod
-    def from_files(nodes_definition_file, flow_definition_files, no_check=False):
+    @classmethod
+    def from_files(cls, nodes_definition_file, flow_definition_files, no_check=False):
         """
         Construct System from files
 
@@ -908,12 +937,12 @@ class System(object):
         """
         system = System()
 
-        with open(nodes_definition_file, 'r') as f:
-            _logger.debug("Parsing '{}'".format(nodes_definition_file))
+        with open(nodes_definition_file, 'r') as nodes_file:
+            cls._logger.debug("Parsing '%s'", nodes_definition_file)
             try:
-                content = yaml.load(f, Loader=yaml.SafeLoader)
+                content = yaml.load(nodes_file, Loader=yaml.SafeLoader)
             except:
-                _logger.error("Bad YAML file, unable to load tasks from {}".format(nodes_definition_file))
+                cls._logger.error("Bad YAML file, unable to load tasks from '%s'", nodes_definition_file)
                 raise
 
         for storage_dict in content.get('storages', []):
@@ -944,20 +973,20 @@ class System(object):
             flow_definition_files = [flow_definition_files]
 
         for flow_file in flow_definition_files:
-            with open(flow_file, 'r') as f:
-                _logger.debug("Parsing '{}'".format(flow_file))
+            with open(flow_file, 'r') as flow_definition:
+                cls._logger.debug("Parsing '%s'", flow_file)
                 try:
-                    content = yaml.load(f, Loader=yaml.SafeLoader)
+                    content = yaml.load(flow_definition, Loader=yaml.SafeLoader)
                 except:
-                    _logger.error("Bad YAML file, unable to load flow from {}".format(flow_file))
+                    cls._logger.error("Bad YAML file, unable to load flow from '%s'", flow_file)
                     raise
 
             for flow_def in content['flow-definitions']:
                 flow = system.flow_by_name(flow_def['name'])
                 flow.parse_definition(flow_def, system)
 
-        system._post_parse_check()
+        system._post_parse_check()  # pylint: disable=protected-access
         if not no_check:
-            system._check()
+            system._check()  # pylint: disable=protected-access
 
         return system

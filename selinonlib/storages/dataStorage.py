@@ -17,15 +17,18 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""
+Data storage interface
+"""
 
 import abc
 
 
-class DataStorage(metaclass=abc.ABCMeta):
+class DataStorage(object, metaclass=abc.ABCMeta):
     """
     Abstract Selinon storage adapter that is implemented by a user
     """
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def __init__(self, *args, **kwargs):
         pass
 

@@ -17,6 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""A flow representation"""
 
 import logging
 from .edge import Edge
@@ -25,13 +26,14 @@ from .failures import Failures
 from .strategy import Strategy
 from .globalConfig import GlobalConfig
 
-_logger = logging.getLogger(__name__)
 
-
-class Flow(Node):
+class Flow(Node):  # pylint: disable=too-many-instance-attributes
     """
     Flow representation
     """
+
+    _logger = logging.getLogger(__name__)
+
     def __init__(self, name, edges=None, failures=None, nowait_nodes=None, queue_name=None, strategy=None):
         """
         :param name: flow name
@@ -44,8 +46,9 @@ class Flow(Node):
         :type queue_name: str
         :param strategy: a strategy to be used for scheduling dispatcher
         """
-        super(Flow, self).__init__(name)
-        _logger.debug("Creating flow '{}'".format(name))
+        super().__init__(name)
+
+        self._logger.debug("Creating flow '%s'", name)
         self.edges = edges or []
         self.failures = failures or None
         self.nowait_nodes = nowait_nodes or []
@@ -81,7 +84,7 @@ class Flow(Node):
                 flow_def[propagate_type] = [flow_def[propagate_type]]
 
             if isinstance(flow_def[propagate_type], list):
-                ret = []
+                ret = []  # pylint: disable=redefined-variable-type
                 for node_name in flow_def[propagate_type]:
                     node = system.flow_by_name(node_name)
                     ret.append(node)
@@ -224,11 +227,9 @@ class Flow(Node):
         """
         return self._should_config(dst_node_name, self.propagate_parent)
 
-    def should_propagate_compound_finished(self, dst_node_name):
+    def should_propagate_compound_finished(self, dst_node_name):  # pylint: disable=invalid-name
         """
         :param dst_node_name: destination node to which configuration should be propagated
         :return: True if should propagate_compound_finished
         """
         return self._should_config(dst_node_name, self.propagate_compound_finished)
-
-

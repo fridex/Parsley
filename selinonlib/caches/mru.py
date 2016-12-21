@@ -17,6 +17,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""
+Most-Recently-Used cache implementation
+"""
 
 from .lru import LRU
 
@@ -31,4 +34,3 @@ class MRU(LRU):
         """
         while self.current_cache_size + 1 > self.max_cache_size and self.current_cache_size > 0:
             self._remove_record(self._record_tail)
-

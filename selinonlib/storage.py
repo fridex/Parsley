@@ -17,6 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""Storage configuration and abstraction from YAML config file"""
 
 from .cacheConfig import CacheConfig
 
@@ -26,6 +27,7 @@ class Storage(object):
     A storage representation
     """
     def __init__(self, name, import_path, configuration, cache_config, class_name=None):
+        # pylint: disable=too-many-arguments
         """
         :param name: storage name
         :param import_path: storage import path
@@ -49,31 +51,31 @@ class Storage(object):
         self.tasks.append(task)
 
     @staticmethod
-    def from_dict(d):
+    def from_dict(dict_):
         """
         Construct storage instance from a dict
 
-        :param d: dict that should be used to instantiate Storage
+        :param dict_: dict that should be used to instantiate Storage
         :rtype: Storage
         """
-        if 'name' not in d or not d['name']:
+        if 'name' not in dict_ or not dict_['name']:
             raise KeyError('Storage name definition is mandatory')
-        if 'import' not in d or not d['import']:
+        if 'import' not in dict_ or not dict_['import']:
             raise KeyError('Storage import definition is mandatory')
-        if 'configuration' not in d or not d['configuration']:
+        if 'configuration' not in dict_ or not dict_['configuration']:
             raise KeyError('Storage configuration definition is mandatory')
-        if 'classname' in d and not isinstance(d['classname'], str):
-            raise ValueError("Storage classname definition should be string, got '%s' instead" % d['classname'])
-        if 'cache' in d:
-            if not isinstance(d['cache'], dict):
+        if 'classname' in dict_ and not isinstance(dict_['classname'], str):
+            raise ValueError("Storage classname definition should be string, got '%s' instead" % dict_['classname'])
+        if 'cache' in dict_:
+            if not isinstance(dict_['cache'], dict):
                 raise ValueError("Storage cache for storage '%s' should be a dict with configuration, got '%s' instead"
-                                 % (d['name'], d['cache']))
+                                 % (dict_['name'], dict_['cache']))
 
-            cache_config = CacheConfig.from_dict(d['cache'], d['name'])
+            cache_config = CacheConfig.from_dict(dict_['cache'], dict_['name'])
         else:
-            cache_config = CacheConfig.get_default(d['name'])
+            cache_config = CacheConfig.get_default(dict_['name'])
 
-        return Storage(d['name'], d['import'], d['configuration'], cache_config, d.get('classname'))
+        return Storage(dict_['name'], dict_['import'], dict_['configuration'], cache_config, dict_.get('classname'))
 
     @property
     def var_name(self):

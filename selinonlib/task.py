@@ -17,21 +17,23 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""A task representation from YAML config file"""
 
 import logging
 from .node import Node
 from .globalConfig import GlobalConfig
-
-_logger = logging.getLogger(__name__)
 
 _DEFAULT_MAX_RETRY = 0
 _DEFAULT_RETRY_COUNTDOWN = 0
 
 
 class Task(Node):
+    # pylint: disable=too-many-instance-attributes,arguments-differ
     """
     A task representation within the system
     """
+    _logger = logging.getLogger(__name__)
+
     def __init__(self, name, import_path, storage, opts):
         """
         :param name: name of the task
@@ -55,8 +57,8 @@ class Task(Node):
         # register task usage
         if self.storage:
             storage.register_task(self)
-        _logger.debug("Creating task with name '%s' import path '%s', class name '%s'"
-                      % (self.name, self.import_path, self.class_name))
+        self._logger.debug("Creating task with name '%s' import path '%s', class name '%s'",
+                           self.name, self.import_path, self.class_name)
 
     def check(self):
         """

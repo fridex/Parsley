@@ -17,6 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""Leaf predicate in condition - should always return True/False for the given input"""
 
 import ast
 import importlib
@@ -25,13 +26,14 @@ from .predicate import Predicate
 from .helpers import dict2strkwargs, get_function_arguments
 from .globalConfig import GlobalConfig
 
-_logger = logging.getLogger(__name__)
-
 
 class LeafPredicate(Predicate):
     """
     Leaf predicate representation
     """
+
+    _logger = logging.getLogger(__name__)
+
     def __init__(self, predicate_func, node, flow, args=None):
         """
         :param predicate_func: predicate function
@@ -39,6 +41,7 @@ class LeafPredicate(Predicate):
         :param flow: flow to which predicate belongs to
         :param args: predicate arguments that should be used
         """
+        super().__init__()
         self.node = node
         self.flow = flow
 
@@ -75,19 +78,19 @@ class LeafPredicate(Predicate):
             # node_args are implicit as well
             func_args.remove('node_args')
 
-        func_args = set(func_args)
-        user_args = set(user_args)
+        func_args = set(func_args)  # pylint: disable=redefined-variable-type
+        user_args = set(user_args)  # pylint: disable=redefined-variable-type
 
         error = False
 
         for arg in func_args - user_args:
-            _logger.error("Argument '%s' of predicate '%s' not specified in flow '%s'"
-                          % (arg, self._func.__name__, self.flow.name))
+            self._logger.error("Argument '%s' of predicate '%s' not specified in flow '%s'",
+                               arg, self._func.__name__, self.flow.name)
             error = True
 
         for arg in user_args - func_args:
-            _logger.error("Invalid argument '%s' for predicate '%s' in flow '%s'"
-                          % (arg, self._func.__name__, self.flow.name))
+            self._logger.error("Invalid argument '%s' for predicate '%s' in flow '%s'",
+                               arg, self._func.__name__, self.flow.name)
             error = True
 
         if error:
@@ -148,8 +151,8 @@ class LeafPredicate(Predicate):
             kwargs.append(ast.keyword(arg='message',
                                       value=ast.Call(func=ast.Attribute(value=ast.Name(id='db', ctx=ast.Load()),
                                                                         attr='get', ctx=ast.Load()),
-                                                     args = [ast.Str(s=self._task_str_name())],
-                                                     keywords=[], starargs = None, kwargs = None)))
+                                                     args=[ast.Str(s=self._task_str_name())],
+                                                     keywords=[], starargs=None, kwargs=None)))
         if self.requires_node_args():
             kwargs.append(ast.keyword(arg='node_args', value=ast.Name(id='node_args', ctx=ast.Load())))
 
@@ -166,7 +169,7 @@ class LeafPredicate(Predicate):
         return [self._func]
 
     @classmethod
-    def create(cls, name, node, flow, args=None):
+    def create(cls, name, node, flow, args=None):  # pylint: disable=arguments-differ
         """
         Create predicate
 
@@ -184,6 +187,6 @@ class LeafPredicate(Predicate):
             module = importlib.import_module(GlobalConfig.predicates_module)
             predicate = getattr(module, name)
         except ImportError:
-            _logger.error("Cannot import predicate '{}'".format(name))
+            cls._logger.error("Cannot import predicate '%s'", name)
             raise
         return LeafPredicate(predicate, node, flow, args)

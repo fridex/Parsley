@@ -17,6 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""User configuration"""
 
 import yaml
 
@@ -33,7 +34,7 @@ class _ConfigSingleton(type):
         return cls._instance
 
     @classmethod
-    def set_config(cls, config):
+    def set_config(mcs, config):
         """
         Set config which should be used in within Config singleton
 
@@ -41,8 +42,8 @@ class _ConfigSingleton(type):
         :type: dict
         """
         # set _config before the singleton is instantiated
-        assert(cls._instance is None)
-        cls._config = config
+        assert mcs._instance is None
+        mcs._config = config
 
 
 class Config(metaclass=_ConfigSingleton):
@@ -57,8 +58,8 @@ class Config(metaclass=_ConfigSingleton):
         if self._config is None:
             return
 
-        with open(self._config) as f:
-            self._raw_config = yaml.load(f, Loader=yaml.SafeLoader)
+        with open(self._config) as input_file:
+            self._raw_config = yaml.load(input_file, Loader=yaml.SafeLoader)
 
     def style_task(self):
         """

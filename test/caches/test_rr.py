@@ -52,4 +52,3 @@ class TestRR(object):
 
         assert cache.get("item_id3", "Task1", "flow1") == "item3"
         assert cache.current_cache_size == 2
-

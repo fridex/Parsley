@@ -17,7 +17,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
-
+"""
+Predicate interface - predicate for building conditions
+"""
 
 import abc
 from .helpers import dict2json
@@ -64,7 +66,7 @@ class Predicate(metaclass=abc.ABCMeta):
         pass
 
     @staticmethod
-    def construct(tree, nodes_from, flow):
+    def construct(tree, nodes_from, flow):  # pylint: disable=too-many-branches
         """
         Top-down creation of predicates - recursively called to construct predicates
 
@@ -76,7 +78,7 @@ class Predicate(metaclass=abc.ABCMeta):
         :rtype: Predicate
         """
         from .leafPredicate import LeafPredicate
-        from .buildinPredicate import OrPredicate, AndPredicate, NotPredicate
+        from .builtinPredicate import OrPredicate, AndPredicate, NotPredicate
 
         if not tree:
             raise ValueError("Bad condition '%s'" % tree)
@@ -84,9 +86,9 @@ class Predicate(metaclass=abc.ABCMeta):
         if 'name' in tree:
             if 'node' in tree:
                 node = None
-                for n in nodes_from:
-                    if n.name == tree['node']:
-                        node = n
+                for node_from in nodes_from:
+                    if node_from.name == tree['node']:
+                        node = node_from
                         break
                 if node is None:
                     raise ValueError("Node listed node '%s' in predicate '%s' is not requested in 'nodes_from'"
@@ -118,4 +120,3 @@ class Predicate(metaclass=abc.ABCMeta):
         :raises ValueError: if predicate is not correct
         """
         pass
-

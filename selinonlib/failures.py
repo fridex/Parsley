@@ -17,6 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""Task and flow failure handling"""
 
 from itertools import chain
 from .failureNode import FailureNode
@@ -154,42 +155,42 @@ class Failures(object):
         """
         return list(self.starting_nodes.keys())
 
-    def dump2stream(self, f, flow_name):
+    def dump2stream(self, stream, flow_name):
         """
         Dump failures to the Python config file for Dispatcher
 
-        :param f: output stream to dump to
+        :param stream: output stream to dump to
         :param flow_name: a name of a flow that failures belong to
         """
         fail_node = self.last_allocated
 
         while fail_node:
             next_dict = {}
-            for k, v in fail_node.next.items():
-                next_dict[k] = self.failure_node_name(flow_name, v)
+            for key, value in fail_node.next.items():
+                next_dict[key] = self.failure_node_name(flow_name, value)
 
-            f.write("%s = {'next': " % self.failure_node_name(flow_name, fail_node))
+            stream.write("%s = {'next': " % self.failure_node_name(flow_name, fail_node))
 
             # print "next_dict"
-            f.write('{')
+            stream.write('{')
             printed = False
-            for k, v in next_dict.items():
+            for key, value in next_dict.items():
                 if printed:
-                    f.write(", ")
-                f.write("'%s': %s" % (k, v))
+                    stream.write(", ")
+                stream.write("'%s': %s" % (key, value))
                 printed = True
-            f.write('}, ')
+            stream.write('}, ')
 
             # now list of nodes that should be started in case of failure (fallback)
-            f.write("'fallback': %s}\n" % fail_node.fallback)
+            stream.write("'fallback': %s}\n" % fail_node.fallback)
             fail_node = fail_node.failure_link
 
-        f.write("\n%s = {" % self.starting_nodes_name(flow_name))
+        stream.write("\n%s = {" % self.starting_nodes_name(flow_name))
 
         printed = False
-        for k, v in self.starting_nodes.items():
+        for key, value in self.starting_nodes.items():
             if printed:
-                f.write(",")
-            f.write("\n    '%s': %s" % (k, self.failure_node_name(flow_name, v)))
+                stream.write(",")
+            stream.write("\n    '%s': %s" % (key, self.failure_node_name(flow_name, value)))
             printed = True
-        f.write("\n}\n\n")
+        stream.write("\n}\n\n")

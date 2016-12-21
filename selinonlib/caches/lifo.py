@@ -17,6 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""Last-In-First-Out cache implementation"""
 
 from .fifo import FIFO
 
@@ -32,4 +33,3 @@ class LIFO(FIFO):
         while self.current_cache_size + 1 > self.max_cache_size and self.current_cache_size > 0:
             latest = self._cache_usage.pop()
             del self._cache[latest]
-

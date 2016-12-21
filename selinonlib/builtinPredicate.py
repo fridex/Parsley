@@ -17,35 +17,36 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""
+Built-in predicates used as core building blocks to build predicates
+"""
 
 import ast
-import logging
+import abc
 from functools import reduce
 from .predicate import Predicate
 
 
-_logger = logging.getLogger(__name__)
-
-
-class BuildinPredicate(Predicate):
+class BuiltinPredicate(Predicate, metaclass=abc.ABCMeta):  # pylint: disable=abstract-method
     """
     Build in predicate abstract class
     """
     pass
 
 
-class NaryPredicate(BuildinPredicate):
+class NaryPredicate(BuiltinPredicate, metaclass=abc.ABCMeta):  # pylint: disable=abstract-method
     """
     N-ary predicate abstract class
     """
     def __init__(self, children):
+        super().__init__()
         self._children = children
 
-    def _str(self, op):
+    def _str(self, operator):
         ret = ""
         for child in self._children:
             if len(ret) > 0:
-                ret += " %s " % op
+                ret += " %s " % operator
             ret += str(child)
 
         if len(self._children) > 1:
@@ -87,11 +88,12 @@ class NaryPredicate(BuildinPredicate):
             child.check()
 
 
-class UnaryPredicate(BuildinPredicate):
+class UnaryPredicate(BuiltinPredicate, metaclass=abc.ABCMeta):  # pylint: disable=abstract-method
     """
     Unary predicate abstract class
     """
     def __init__(self, child):
+        super().__init__()
         self._child = child
 
     @staticmethod
@@ -207,11 +209,12 @@ class NotPredicate(UnaryPredicate):
         return UnaryPredicate._create(tree, NotPredicate, nodes_from, flow)
 
 
-class AlwaysTruePredicate(BuildinPredicate):
+class AlwaysTruePredicate(BuiltinPredicate):
     """
     Predicate used if condition in config file is omitted
     """
     def __init__(self, flow):
+        super().__init__()
         self.flow = flow
 
     def __str__(self):

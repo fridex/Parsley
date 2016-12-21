@@ -32,6 +32,9 @@ Other parameters are specific for strategy function and are configurable from YA
 
 from random import randint as gen_random
 
+# There are done checks on user-defined strategies, so keep args
+# pylint: disable=unused-argument
+
 
 def linear_increase(start_retry, max_retry, step,
                     previous_retry, active_nodes, failed_nodes, new_started_nodes, new_fallback_nodes, finished_nodes):
@@ -79,7 +82,8 @@ def linear_adapt(start_retry, max_retry, step,
 
 
 def biexponential_increase(start_retry, max_retry,
-                           previous_retry, active_nodes, failed_nodes, new_started_nodes, new_fallback_nodes, finished_nodes):
+                           previous_retry, active_nodes, failed_nodes,
+                           new_started_nodes, new_fallback_nodes, finished_nodes):
     """
     Increase exponentially if no node started, decrease drastically to start_retry if a node scheduled
 
@@ -100,7 +104,8 @@ def biexponential_increase(start_retry, max_retry,
 
 
 def biexponential_decrease(start_retry, stop_retry,
-                           previous_retry, active_nodes, failed_nodes, new_started_nodes, new_fallback_nodes, finished_nodes):
+                           previous_retry, active_nodes, failed_nodes,
+                           new_started_nodes, new_fallback_nodes, finished_nodes):
     """
     Decrease by div 2 each time if no node started, decrease to stop_retry if a node scheduled
 
@@ -118,7 +123,8 @@ def biexponential_decrease(start_retry, stop_retry,
 
 
 def biexponential_adapt(start_retry, max_retry,
-                        previous_retry, active_nodes, failed_nodes, new_started_nodes, new_fallback_nodes, finished_nodes):
+                        previous_retry, active_nodes, failed_nodes,
+                        new_started_nodes, new_fallback_nodes, finished_nodes):
     """
     Increase exponentially if no node started, decrease exponentially if a node scheduled
 

@@ -17,11 +17,11 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
+"""Abstract representation of nodes in task/flow dependencies - a node is either a task or a flow"""
 
 import datetime
 import abc
 import re
-from .helpers import get_function_arguments
 
 
 class Node(metaclass=abc.ABCMeta):
@@ -34,7 +34,7 @@ class Node(metaclass=abc.ABCMeta):
         self._name = name
 
     @abc.abstractstaticmethod
-    def from_dict(d):
+    def from_dict(dict_):
         """
         Construct node from a dict
 
@@ -72,28 +72,26 @@ class Node(metaclass=abc.ABCMeta):
         :return: True if name is a correct node name
         :rtype: bool
         """
-        r = re.compile(r"^[_a-zA-Z][_a-zA-Z0-9]*$")
-        return r.match(name)
+        regexp = re.compile(r"^[_a-zA-Z][_a-zA-Z0-9]*$")
+        return regexp.match(name)
 
-    def parse_throttle(self, d):
+    def parse_throttle(self, dict_):
         """
         Parse throttle from a dictionary
 
-        :param d: dictionary from which throttle should be parsed (expected under 'throttle' key)
+        :param dict_: dictionary from which throttle should be parsed (expected under 'throttle' key)
         :return: timedelta describing throttle countdown
         :rtype: time.timedelta
         """
-        if 'throttle' in d:
-            if not isinstance(d['throttle'], dict):
+        if 'throttle' in dict_:
+            if not isinstance(dict_['throttle'], dict):
                 raise ValueError("Definition of throttle expects key value definition, got %s instead in '%s'"
-                                 % (d['throttle'], self.name))
+                                 % (dict_['throttle'], self.name))
             try:
-                return datetime.timedelta(**d['throttle'])
+                return datetime.timedelta(**dict_['throttle'])
             except TypeError:
                 raise ValueError("Wrong throttle definition in '%s', expected values are %s"
                                  % (self.name,
                                     ['days', 'seconds', 'microseconds', 'milliseconds', 'minutes', 'hours', 'weeks']))
         else:
             return None
-
-

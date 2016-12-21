@@ -287,7 +287,7 @@ class Command(object):
 
         if not no_color:
             formatter = logging.Formatter("%(process)d: [%(asctime)s] %(name)s %(funcName)s:%(lineno)d: %(message)s")
-            # setup `RainbowLoggingHandler`
+            # setup RainbowLoggingHandler
             handler = RainbowLoggingHandler(sys.stderr)
             handler.setFormatter(formatter)
             logger.addHandler(handler)

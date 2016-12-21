@@ -17,8 +17,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ###################################################################
+"""
+An error raised when there is requested an item from cache that is not stored in cache
+"""
 
 
 class CacheMissError(Exception):
+    """
+    An error raised when there is requested an item from cache that is not stored in cache
+    """
     pass
-

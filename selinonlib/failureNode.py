@@ -17,7 +17,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
-"""
+
+r"""
 A failure is basically a node in graph, that represents all permutations of possible cases of failures. Consider
 having two failure conditions:
 
@@ -80,7 +81,7 @@ class FailureNode(object):
         self.traversed = traversed
         self.failure_link = failure_link
 
-    def to(self, node_name):
+    def to(self, node_name):  # pylint: disable=invalid-name
         """
         Retrieve next permutation
 
@@ -103,7 +104,7 @@ class FailureNode(object):
         :param node_name: a node for next permutation
         :param failure: FailureNode that should be added
         """
-        assert(node_name not in self.next)
+        assert node_name not in self.next
         self.next[node_name] = failure
 
     @staticmethod
@@ -119,7 +120,7 @@ class FailureNode(object):
         failure_node.fallback = fallback
 
     @classmethod
-    def construct(cls, flow, failures):
+    def construct(cls, flow, failures):  # pylint: disable=too-many-locals,too-many-branches
         """
         Construct failures from failures dictionary
 
@@ -130,15 +131,16 @@ class FailureNode(object):
         last_allocated = None
         starting_failures = {}
 
+        # pylint: disable=too-many-nested-blocks
         for failure in failures:
             used_starting_failures = {}
 
             for node in failure['nodes']:
                 if node not in starting_failures:
-                    f = FailureNode(flow, [node], last_allocated)
-                    last_allocated = f
-                    starting_failures[node] = f
-                    used_starting_failures[node] = f
+                    failure_node = FailureNode(flow, [node], last_allocated)
+                    last_allocated = failure_node
+                    starting_failures[node] = failure_node
+                    used_starting_failures[node] = failure_node
                 else:
                     used_starting_failures[node] = starting_failures[node]
 
@@ -155,18 +157,18 @@ class FailureNode(object):
 
                             if not current_node.has_to(edge_node):
                                 next_node = current_node.traversed + [edge_node]
-                                f = FailureNode(flow, next_node, last_allocated)
-                                last_allocated = f
-                                current_node.add_to(edge_node, f)
+                                failure_node = FailureNode(flow, next_node, last_allocated)
+                                last_allocated = failure_node
+                                current_node.add_to(edge_node, failure_node)
 
                                 for node in current_nodes:
                                     diff = set(node.traversed) ^ set(next_node)
 
                                     if len(diff) == 1:
                                         if not node.has_to(list(diff)[0]):
-                                            node.add_to(list(diff)[0], f)
+                                            node.add_to(list(diff)[0], failure_node)
 
-                                next_nodes.append(f)
+                                next_nodes.append(failure_node)
                             else:
                                 # keep for generating new permutations
                                 next_nodes.append(current_node.to(edge_node))
@@ -174,8 +176,10 @@ class FailureNode(object):
                 current_nodes = next_nodes
                 next_nodes = []
 
-            f = reduce(lambda x, y: x.to(y), failure['nodes'][1:], used_starting_failures[failure['nodes'][0]])
-            cls._add_fallback(f, failure['fallback'])
+            failure_node = reduce(lambda x, y: x.to(y),
+                                  failure['nodes'][1:],
+                                  used_starting_failures[failure['nodes'][0]])
+            cls._add_fallback(failure_node, failure['fallback'])
 
         # we could make enumerable and avoid last_allocated (it would be cleaner), but let's stick with
         # this one for now

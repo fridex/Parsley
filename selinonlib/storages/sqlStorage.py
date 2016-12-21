@@ -1,19 +1,43 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# ####################################################################
+# Copyright (C) 2016  Fridolin Pokorny, fpokorny@redhat.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# ####################################################################
+"""
+Selinon SQL Database adapter - Postgres
+"""
 
-from sqlalchemy import create_engine, Column, Integer, Sequence, String
+from sqlalchemy import (create_engine, Column, Integer, Sequence, String)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy_utils import create_database, database_exists
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy_utils import create_database, database_exists
 from .dataStorage import DataStorage
 
-Base = declarative_base()
+_Base = declarative_base()  # pylint: disable=invalid-name
 
 
-class Result(Base):
+class Result(_Base):
+    """
+    Record for a task result
+    """
     __tablename__ = 'result'
 
-    id = Column(Integer, Sequence('result_id'), primary_key=True)
+    id = Column(Integer, Sequence('result_id'), primary_key=True)  # pylint: disable=invalid-name
     flow_name = Column(String(128))
     task_name = Column(String(128))
     task_id = Column(String(255), unique=True)
@@ -30,6 +54,9 @@ class Result(Base):
 
 
 class SqlStorage(DataStorage):
+    """
+    Selinon SQL Database adapter - Postgres
+    """
     def __init__(self, connection_string, encoding='utf-8', echo=False):
         super(SqlStorage, self).__init__()
 
@@ -44,7 +71,7 @@ class SqlStorage(DataStorage):
             create_database(self.engine.url)
 
         self.session = sessionmaker(bind=self.engine)()
-        Base.metadata.create_all(self.engine)
+        _Base.metadata.create_all(self.engine)
 
     def disconnect(self):
         if self.is_connected():
@@ -52,15 +79,15 @@ class SqlStorage(DataStorage):
             self.session = None
 
     def retrieve(self, task_name, task_id):
-        assert(self.is_connected())
+        assert self.is_connected()
 
         record = self.session.query(Result).filter_by(task_id=task_id).one()
 
-        assert(record.task_name == task_name)
+        assert record.task_name == task_name
         return record.result
 
     def store(self, node_args, flow_name, task_name, task_id, result):
-        assert(self.is_connected())
+        assert self.is_connected()
 
         record = Result(node_args, flow_name, task_name, task_id, result)
         try:
@@ -71,4 +98,3 @@ class SqlStorage(DataStorage):
             raise
 
         return record.id
-

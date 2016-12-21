@@ -17,21 +17,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # ####################################################################
-
-import logging
-from flexmock import flexmock
-from datetime import datetime, timedelta
-from celery import Task as CeleryTask
-from selinon import Config, run_flow
-from selinon.systemState import SystemState
-from selinonlib.globalConfig import GlobalConfig
-from .celeryMocks import SimulateRetry, simulate_apply_async, simulate_retry, SimulateAsyncResult
-from .queuePool import QueuePool
-from .progress import Progress
-
-
-_logger = logging.getLogger(__name__)
-
 """Using Selinon simulator is a good way to test you configuration and behaviour locally if you would like to save
 some time when debugging or exploring all the possibilities that Selinon offers you. Keep in mind that running
 Selinon locally was designed for development purposes and behaviour in general can (and in many cases will) vary.
@@ -53,10 +38,22 @@ In order to understand how Simulator works, you need to understand how Celery wo
 documentation if you are a Celery-newbie.
 """
 
+import logging
+from datetime import datetime, timedelta
+from flexmock import flexmock
+from celery import Task as CeleryTask
+from selinon import Config, run_flow
+from selinon.systemState import SystemState
+from selinonlib.globalConfig import GlobalConfig
+from .celeryMocks import SimulateRetry, simulate_apply_async, simulate_retry, SimulateAsyncResult
+from .queuePool import QueuePool
+from .progress import Progress
+
 
 class Simulator(object):
     """Simulator that simulates Selinon run in a multi-process environment"""
     simulator_queues = QueuePool()
+    _logger = logging.getLogger(__name__)
 
     def __init__(self, nodes_definition, flow_definitions, **opts):
         """
@@ -65,8 +62,8 @@ class Simulator(object):
         :param opts: additional simulator options, supported: concurrency, config_py path, sleep_time, keep_config_py
         """
         Config.set_config_yaml(nodes_definition, flow_definitions,
-                               opts.pop('config_py', None),
-                               opts.pop('keep_config_py', False))
+                               config_py=opts.pop('config_py', None),
+                               keep_config_py=opts.pop('keep_config_py', False))
 
         self.concurrency = opts.pop('concurrency', 1)
         self.sleep_time = opts.pop('sleep_time', 1)
@@ -91,7 +88,7 @@ class Simulator(object):
 
         while not self.simulator_queues.is_empty():
             # TODO: concurrency
-            _logger.debug("new simulator run")
+            self._logger.debug("new simulator run")
 
             # Retrieve a task that can be run right now
             time, record = self.simulator_queues.pop()
@@ -116,7 +113,7 @@ class Simulator(object):
                 if 'exc' in selinon_exc.celery_kwargs and selinon_exc.celery_kwargs.get('max_retries', 1) == 0:
                     # log only user exception as we do not want SimulateRetry in our exception traceback
                     user_exc = selinon_exc.celery_kwargs['exc']
-                    _logger.exception(str(user_exc), exc_info=(user_exc, user_exc, user_exc.__traceback__))
+                    self._logger.exception(str(user_exc), exc_info=(user_exc, user_exc, user_exc.__traceback__))
                     SimulateAsyncResult.set_failed(task.request.id, user_exc)
                 else:
                     # reschedule if there was an exception and we did not hit max_retries when doing retry
@@ -134,7 +131,7 @@ class Simulator(object):
         :param celery_kwargs: arguments for the task - raw Celery arguments which also carry additional Selinon
                               arguments
         """
-        _logger.debug("simulator is scheduling %s - %s" % (task.__class__.__name__, celery_kwargs))
+        cls._logger.debug("simulator is scheduling %s - %s", task.__class__.__name__, celery_kwargs)
         cls.simulator_queues.push(queue_name=celery_kwargs.get('queue', GlobalConfig.DEFAULT_CELERY_QUEUE),
                                   time=datetime.now() + timedelta(seconds=celery_kwargs.get('countdown') or 0),
                                   record=(task, celery_kwargs,))
