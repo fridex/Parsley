@@ -115,7 +115,7 @@ class GlobalConfig(object):
         cls.default_dispatcher_queue = dict_.get('default_dispatcher_queue', cls.DEFAULT_CELERY_QUEUE)
         cls.default_task_queue = dict_.get('default_task_queue', cls.DEFAULT_CELERY_QUEUE)
 
-        unknown_conf = check_conf_keys(dict_, ('predicates_modules', 'trace'))
+        unknown_conf = check_conf_keys(dict_, ('predicates_module', 'trace'))
         if unknown_conf:
             raise ValueError("Unknown configuration options supplied in global configuration section: %s"
                              % unknown_conf)
