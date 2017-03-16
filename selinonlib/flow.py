@@ -13,6 +13,7 @@ from .edge import Edge
 from .failures import Failures
 from .helpers import check_conf_keys
 from .node import Node
+from .selectiveRunFunction import SelectiveRunFunction
 from .strategy import Strategy
 
 
@@ -52,6 +53,7 @@ class Flow(Node):  # pylint: disable=too-many-instance-attributes
         self.cache_config = opts.pop('cache_config', CacheConfig.get_default(self.name))
         self.max_retry = opts.pop('max_retry', self._DEFAULT_MAX_RETRY)
         self.retry_countdown = opts.pop('retry_countdown', self._DEFAULT_RETRY_COUNTDOWN)
+        self.selective_run_function = opts.pop('selective_run_function', SelectiveRunFunction.get_default())
 
         # disjoint config options
         assert self.propagate_finished is not True and self.propagate_compound_finished is not True  # nosec
@@ -102,7 +104,7 @@ class Flow(Node):  # pylint: disable=too-many-instance-attributes
         known_conf_keys = ('name', 'failures', 'nowait', 'cache', 'sampling', 'throttling', 'node_args_from_first',
                            'propagate_node_args', 'propagate_finished', 'propagate_parent', 'propagate_parent_failures',
                            'edges', 'propagate_compound_finished', 'queue', 'max_retry', 'retry_countdown',
-                           'propagate_failures', 'propagate_compound_failures')
+                           'propagate_failures', 'propagate_compound_failures', 'selective_run_function')
 
         unknown_conf = check_conf_keys(flow_def, known_conf_keys)
         if unknown_conf:
@@ -147,6 +149,9 @@ class Flow(Node):  # pylint: disable=too-many-instance-attributes
 
         if 'sampling' in flow_def:
             self.strategy = Strategy.from_dict(flow_def.get('sampling'), self.name)
+
+        if 'selective_run_function' in flow_def:
+            self.selective_run_function = SelectiveRunFunction.from_dict(flow_def['selective_run_function'])
 
         self.throttling = self.parse_throttling(flow_def.pop('throttling', {}))
         self.node_args_from_first = flow_def.get('node_args_from_first', False)

@@ -77,7 +77,7 @@ class Command(object):
         parser.add_argument('--config', '-c', dest='config', action='store', metavar='CONFIG.yml',
                             help='path to configuration file')
         parser.add_argument('--output-dir', '-o', dest='output_dir', action='store', metavar='OUTPUT_DIR',
-                            default=cls.DEFAULT_PLOT_GRAPH_FORMAT,
+                            default=cls.DEFAULT_PLOT_OUTPUT_DIR,
                             help='specify output dir where plotted graphs should be placed (default: current dir)')
         parser.add_argument('--format', dest='graph_format', action='store', metavar='FORMAT',
                             default=cls.DEFAULT_PLOT_GRAPH_FORMAT,
@@ -120,6 +120,13 @@ class Command(object):
                             help='path to file where should be generated config.py placed')
         parser.add_argument('--keep-config-py', action='store_true', dest='keep_config_py',
                             help='do not remove config.py file after run')
+
+        parser.add_argument('--selective-task-names', action='store', dest='selective_task_names', type=str, nargs='+',
+                            help='a list of tasks that should be run when run a selective flow')
+        parser.add_argument('--selective-follow-subflows', action='store_true', dest='selective_follow_subflows',
+                            help='follow subflows in a selective flow')
+        parser.add_argument('--selective-run-subsequent', action='store_true', dest='selective_run_subsequent',
+                            help='run subsequent tasks affected by selective flow run')
 
         return parser
 
@@ -202,8 +209,20 @@ class Command(object):
             'concurrency': args.concurrency,
             'sleep_time': args.sleep_time,
             'config_py': args.config_py,
-            'keep_config_py': args.keep_config_py
+            'keep_config_py': args.keep_config_py,
         }
+
+        if args.selective_task_names:
+            opts['selective'] = {
+                'task_names': args.selective_task_names,
+                'follow_subflows': args.selective_follow_subflows,
+                'run_subsequent': args.selective_run_subsequent
+            }
+        else:
+            if args.selective_follow_subflows:
+                raise ValueError("Option --selective-follow-subflows requires --selective-task-names set")
+            if args.selective_run_subsequent:
+                raise ValueError("Option --selective-run-subsequent requires --selective-task-names set")
 
         simulator = Simulator(args.nodes_definition, args.flow_definitions, **opts)
         simulator.run(args.flow_name, node_args)

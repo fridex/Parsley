@@ -32,8 +32,10 @@ import traceback
 
 from celery import Task as CeleryTask
 from flexmock import flexmock
+
 from selinon import Config
 from selinon import run_flow
+from selinon import run_flow_selective
 from selinon.systemState import SystemState
 from selinonlib.globalConfig import GlobalConfig
 
@@ -62,6 +64,7 @@ class Simulator(object):
 
         self.concurrency = opts.pop('concurrency', 1)
         self.sleep_time = opts.pop('sleep_time', 1)
+        self.selective = opts.pop('selective', None)
 
         if opts:
             raise ValueError("Unknown options supplied: %s" % opts)
@@ -79,7 +82,16 @@ class Simulator(object):
         CeleryTask.retry = simulate_retry
 
         # Let's schedule the flow - our first starting task - task will be placed onto queue - see simulate_apply_async
-        run_flow(flow_name, node_args)
+        if self.selective:
+            run_flow_selective(
+                flow_name,
+                self.selective['task_names'],
+                node_args,
+                self.selective['follow_subflows'],
+                self.selective['run_subsequent']
+            )
+        else:
+            run_flow(flow_name, node_args)
 
         while not self.simulator_queues.is_empty():
             # TODO: concurrency

@@ -21,6 +21,7 @@ from .globalConfig import GlobalConfig
 from .helpers import check_conf_keys
 from .helpers import dict2strkwargs
 from .helpers import expr2str
+from .selectiveRunFunction import SelectiveRunFunction
 from .storage import Storage
 from .task import Task
 from .taskClass import TaskClass
@@ -209,6 +210,7 @@ class System(object):
         """
         predicates = set()
         cache_imports = set()
+        selective_run_function_imports = set()
 
         for flow in self.flows:
             for edge in flow.edges:
@@ -224,8 +226,13 @@ class System(object):
                     output.write('from {} import {} as {}\n'.format(edge.foreach['import'],
                                                                     edge.foreach['function'],
                                                                     self._dump_foreach_function_name(flow.name, idx)))
+            f = flow.selective_run_function  # pylint: disable=invalid-name
+            selective_run_function_imports.add((f.import_path, f.name))
+
         for task in self.tasks:
             output.write("from {} import {} as {}\n".format(task.import_path, task.class_name, task.name))
+            f = task.selective_run_function  # pylint: disable=invalid-name
+            selective_run_function_imports.add((f.import_path, f.name))
 
         for storage in self.storages:
             output.write("from {} import {}\n".format(storage.import_path, storage.class_name))
@@ -233,6 +240,13 @@ class System(object):
 
         for import_path, cache_name in cache_imports:
             output.write("from {} import {}\n".format(import_path, cache_name))
+
+        for import_path, function_name in selective_run_function_imports:
+            output.write("from {} import {} as {}\n".format(
+                import_path,
+                function_name,
+                SelectiveRunFunction.construct_import_name(function_name, import_path)
+            ))
 
         # we need partial for strategy function and for using storage as trace destination
         output.write("\nimport functools\n")
@@ -540,6 +554,20 @@ class System(object):
             printed = True
         output.write('\n}\n\n')
 
+    def _dump_selective_run_functions(self, output):
+        """
+        Dump all selective run functions
+
+        :param output: a stream to write to
+        """
+        self._dump_dict(output,
+                        'selective_run_task',
+                        {t.name: t.selective_run_function.get_import_name() for t in self.tasks})
+
+        self._dump_dict(output,
+                        'selective_run_flow',
+                        {f.name: f.selective_run_function.get_import_name() for f in self.flows})
+
     def _dump_nowait_nodes(self, output):
         """
         Dump nowait nodes to a stream
@@ -642,6 +670,8 @@ class System(object):
                 stream.write("\n    '%s': %s" % (flow.name, flow.failures.starting_nodes_name(flow.name)))
         stream.write('\n}\n\n')
 
+        stream.write('#'*80+'\n\n')
+        self._dump_selective_run_functions(stream)
         stream.write('#'*80+'\n\n')
         self._dump_nowait_nodes(stream)
         stream.write('#'*80+'\n\n')
@@ -1055,6 +1085,9 @@ class System(object):
             task_class.add_task(task)
             task.task_class = task_class
             system.add_task(task)
+
+        if 'flows' not in content or content['flows'] is None:
+            raise ValueError("No flow listing defined in the system")
 
         for flow_name in content['flows']:
             flow = Flow(flow_name)

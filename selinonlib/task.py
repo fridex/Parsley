@@ -9,6 +9,7 @@
 import logging
 
 from .node import Node
+from .selectiveRunFunction import SelectiveRunFunction
 
 
 class Task(Node):
@@ -37,6 +38,11 @@ class Task(Node):
         if 'storage_task_name' in opts and not self.storage:
             raise ValueError("Unable to assign storage_task_name for task '%s' (class '%s' from '%s'), task has "
                              "no storage assigned" % (self.name, self.class_name, self.import_path))
+
+        if 'selective_run_function' in opts:
+            self.selective_run_function = SelectiveRunFunction.from_dict(opts.get('selective_run_function'))
+        else:
+            self.selective_run_function = SelectiveRunFunction.get_default()
 
         self.storage_task_name = opts.pop('storage_task_name', name)
         self.output_schema = opts.pop('output_schema', None)
