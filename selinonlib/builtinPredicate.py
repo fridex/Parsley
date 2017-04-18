@@ -44,7 +44,7 @@ class NaryPredicate(BuiltinPredicate, metaclass=abc.ABCMeta):  # pylint: disable
         return ret
 
     @staticmethod
-    def _create(tree, cls, nodes_from, flow):
+    def _create(tree, cls, nodes_from, flow, can_inspect_results):
         """
         Instantiate N-ary predicate cls
 
@@ -54,13 +54,15 @@ class NaryPredicate(BuiltinPredicate, metaclass=abc.ABCMeta):  # pylint: disable
         :param nodes_from: nodes that are used in described edge
         :param flow: flow to which predicate belongs to
         :type flow: Flow
+        :param can_inspect_results: True if predicates in the condition can query task result
+        :type can_inspect_results: bool
         :return: instance of cls
         """
         if not isinstance(tree, list):
             raise ValueError("Nary logical operators expect list of children")
         children = []
         for child in tree:
-            children.append(Predicate.construct(child, nodes_from, flow))
+            children.append(Predicate.construct(child, nodes_from, flow, can_inspect_results))
         return cls(children)
 
     def predicates_used(self):
@@ -100,7 +102,7 @@ class UnaryPredicate(BuiltinPredicate, metaclass=abc.ABCMeta):  # pylint: disabl
         self._child = child
 
     @staticmethod
-    def _create(tree, cls, nodes_from, flow):
+    def _create(tree, cls, nodes_from, flow, can_inspect_results):
         """
         Instantiate N-ary predicate cls
 
@@ -109,11 +111,13 @@ class UnaryPredicate(BuiltinPredicate, metaclass=abc.ABCMeta):  # pylint: disabl
         :param cls: class of type NaryPredicate
         :param nodes_from: nodes that are used in described edge
         :param flow: flow to which predicate belongs to
+        :param can_inspect_results: True if predicates in the condition can query task result
+        :type can_inspect_results: bool
         :return: instance of cls
         """
         if isinstance(tree, list):
             raise ValueError("Unary logical operators expect one child")
-        return cls(Predicate.construct(tree, nodes_from, flow))
+        return cls(Predicate.construct(tree, nodes_from, flow, can_inspect_results))
 
     def predicates_used(self):
         """
@@ -156,7 +160,7 @@ class AndPredicate(NaryPredicate):
         return ast.BoolOp(ast.And(), [ast.Expr(value=x.ast()) for x in self._children])
 
     @staticmethod
-    def create(tree, nodes_from, flow):
+    def create(tree, nodes_from, flow, can_inspect_results):
         """
         Create And predicate
 
@@ -165,9 +169,11 @@ class AndPredicate(NaryPredicate):
         :param nodes_from: nodes that are used in described edge
         :param flow: flow to which predicate belongs to
         :type flow: Flow
+        :param can_inspect_results: True if predicates in the condition can query task result
+        :type can_inspect_results: bool
         :return: instance of cls
         """
-        return NaryPredicate._create(tree, AndPredicate, nodes_from, flow)
+        return NaryPredicate._create(tree, AndPredicate, nodes_from, flow, can_inspect_results)
 
 
 class OrPredicate(NaryPredicate):
@@ -185,7 +191,7 @@ class OrPredicate(NaryPredicate):
         return ast.BoolOp(ast.Or(), [ast.Expr(value=x.ast()) for x in self._children])
 
     @staticmethod
-    def create(tree, nodes_from, flow):
+    def create(tree, nodes_from, flow, can_inspect_results):
         """
         Create Or predicate
 
@@ -194,9 +200,11 @@ class OrPredicate(NaryPredicate):
         :param nodes_from: nodes that are used in described edge
         :param flow: flow to which predicate belongs to
         :type flow: Flow
+        :param can_inspect_results: True if predicates in the condition can query task result
+        :type can_inspect_results: bool
         :return: instance of cls
         """
-        return NaryPredicate._create(tree, OrPredicate, nodes_from, flow)
+        return NaryPredicate._create(tree, OrPredicate, nodes_from, flow, can_inspect_results)
 
 
 class NotPredicate(UnaryPredicate):
@@ -214,7 +222,7 @@ class NotPredicate(UnaryPredicate):
         return ast.UnaryOp(ast.Not(), ast.Expr(value=self._child.ast()))
 
     @staticmethod
-    def create(tree, nodes_from, flow):
+    def create(tree, nodes_from, flow, can_inspect_results):
         """
         Create Or predicate
 
@@ -223,9 +231,11 @@ class NotPredicate(UnaryPredicate):
         :param nodes_from: nodes that are used in described edge
         :param flow: flow to which predicate belongs to
         :type flow: Flow
+        :param can_inspect_results: True if predicates in the condition can query task result
+        :type can_inspect_results: bool
         :return: instance of cls
         """
-        return UnaryPredicate._create(tree, NotPredicate, nodes_from, flow)
+        return UnaryPredicate._create(tree, NotPredicate, nodes_from, flow, can_inspect_results)
 
 
 class AlwaysTruePredicate(BuiltinPredicate):
@@ -262,7 +272,7 @@ class AlwaysTruePredicate(BuiltinPredicate):
         return ast.Name(id='True', ctx=ast.Load())
 
     @staticmethod
-    def create(tree, nodes_from, flow):
+    def create(tree, nodes_from, flow, can_inspect_results):
         return AlwaysTruePredicate(flow)
 
     def requires_message(self):

@@ -50,6 +50,8 @@ Python code generation.
 
 from functools import reduce
 
+from .predicate import Predicate
+
 
 class FailureNode(object):
     """
@@ -64,10 +66,11 @@ class FailureNode(object):
         """
         self.next = {}
         self.flow = flow
-        self.fallback = []
         self.traversed = traversed
         self.failure_link = failure_link
-        self.propagate_failure = False
+        self.fallbacks = []
+        self.propagate_failures = []
+        self.predicates = []
 
     def to(self, node_name):  # pylint: disable=invalid-name
         """
@@ -96,18 +99,13 @@ class FailureNode(object):
         self.next[node_name] = failure
 
     @staticmethod
-    def _add_failure_info(failure_node, failure_info):
+    def _add_failure_info(failure_node, failure_info, predicate):
         """Add failure specific info to a failure node
 
         :param failure_node: a failure node where the failure info should be added
         :param failure_info: additional information as passed from configuration file
-        :return:
+        :param predicate: predicate that should be evaluated on a failure
         """
-        # fallback parsing
-        if len(failure_node.fallback) > 0:
-            raise ValueError("Multiple definitions of a failure in flow '%s' with failure of %s"
-                             % (failure_node.flow.name, failure_node.traversed))
-
         if not isinstance(failure_info['fallback'], list) and failure_info['fallback'] is not True:
             failure_info['fallback'] = [failure_info['fallback']]
 
@@ -122,20 +120,23 @@ class FailureNode(object):
                              "propagate_failure and fallback to true at the same time"
                              % (failure_node.traversed, failure_node.flow.name))
 
-        failure_node.fallback = failure_info['fallback']
-        failure_node.propagate_failure = failure_info.get('propagate_failure', False)
+        failure_node.fallbacks.append(failure_info['fallback'])
+        failure_node.predicates.append(predicate)
+        failure_node.propagate_failures.append(failure_info.get('propagate_failure', False))
 
     @classmethod
-    def construct(cls, flow, failures):  # pylint: disable=too-many-locals,too-many-branches
+    def construct(cls, flow, system, failures):  # pylint: disable=too-many-locals,too-many-branches
         """
         Construct failures from failures dictionary
 
-        :param failures: failures dictionary
         :param flow: flow to which failures conform to
+        :param system: system context to be used
+        :param failures: failures dictionary
         :return: a link for linked list of failures and a dict of starting failures
         """
         last_allocated = None
         starting_failures = {}
+        predicates = []
 
         # pylint: disable=too-many-nested-blocks
         for failure in failures:
@@ -185,8 +186,16 @@ class FailureNode(object):
             failure_node = reduce(lambda x, y: x.to(y),
                                   failure['nodes'][1:],
                                   used_starting_failures[failure['nodes'][0]])
-            cls._add_failure_info(failure_node, failure)
+
+            if 'condition' in failure:
+                nodes_from = [system.get_node_by_name(n) for n in failure['nodes']]
+                predicate = Predicate.construct(failure['condition'], nodes_from, flow, can_inspect_results=False)
+            else:
+                predicate = Predicate.construct_default(flow)
+
+            cls._add_failure_info(failure_node, failure, predicate)
+            predicates.append(predicate)
 
         # we could make enumerable and avoid last_allocated (it would be cleaner), but let's stick with
         # this one for now
-        return last_allocated, starting_failures
+        return last_allocated, starting_failures, predicates

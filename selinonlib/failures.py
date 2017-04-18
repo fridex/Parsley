@@ -17,12 +17,13 @@ class Failures(object):
     Node failures and fallback handling
     """
 
-    def __init__(self, raw_definition, system, flow, last_allocated=None, starting_nodes=None):
+    def __init__(self, raw_definition, system, flow, last_allocated=None, starting_nodes=None, predicates=None):
         """
         :param raw_definition: raw definition of failures
         :param system: system context
         :param last_allocated: last allocated starting node for linked list
         :param starting_nodes: starting nodes for failures
+        :param predicates: all predicates that are used
         """
         self.waiting_nodes = []
         self.fallback_nodes = []
@@ -54,6 +55,8 @@ class Failures(object):
         self.raw_definition = raw_definition
         self.last_allocated = last_allocated
         self.starting_nodes = starting_nodes
+        self.predicates = predicates
+        self.flow = flow
 
     def all_waiting_nodes(self):
         """
@@ -107,12 +110,13 @@ class Failures(object):
                 raise ValueError("Detect cyclic fallback dependency in flow %s, failure on %s"
                                  % (flow.name, failure['nodes'][0]))
 
-            unknown_conf = check_conf_keys(failure, known_conf_opts=('nodes', 'fallback', 'propagate_failure'))
+            known_conf_opts = ('nodes', 'fallback', 'propagate_failure', 'condition')
+            unknown_conf = check_conf_keys(failure, known_conf_opts=known_conf_opts)
             if unknown_conf:
                 raise ValueError("Unknown configuration option supplied in fallback definition: %s" % unknown_conf)
 
-        last_allocated, starting_nodes = FailureNode.construct(flow, failures_dict)
-        return Failures(failures_dict, system, flow, last_allocated, starting_nodes)
+        last_allocated, starting_nodes, predicates = FailureNode.construct(flow, system, failures_dict)
+        return Failures(failures_dict, system, flow, last_allocated, starting_nodes, predicates)
 
     @staticmethod
     def starting_nodes_name(flow_name):
@@ -148,21 +152,39 @@ class Failures(object):
         """
         return list(self.starting_nodes.keys())
 
-    def dump2stream(self, stream, flow_name):
+    def dump_all_conditions2stream(self, stream):
+        """ Dump all condition sources that are present to a stream
+
+        :param stream: output stream to dump to
+        """
+        idx = 0
+        fail_node = self.last_allocated
+
+        while fail_node:
+            for predicate in fail_node.predicates:
+                condition_name = predicate.construct_condition_name(self.flow.name, idx, is_failure_cond=True)
+                condition_source = predicate.to_source()
+
+                stream.write('def {}(db, node_args):\n'.format(condition_name))
+                stream.write('    return {}\n\n\n'.format(condition_source))
+                idx += 1
+
+            fail_node = fail_node.failure_link
+
+    def dump2stream(self, stream):
         """
         Dump failures to the Python config file for Dispatcher
 
         :param stream: output stream to dump to
-        :param flow_name: a name of a flow that failures belong to
         """
         fail_node = self.last_allocated
 
         while fail_node:
             next_dict = {}
             for key, value in fail_node.next.items():
-                next_dict[key] = self.failure_node_name(flow_name, value)
+                next_dict[key] = self.failure_node_name(self.flow.name, value)
 
-            stream.write("%s = {'next': " % self.failure_node_name(flow_name, fail_node))
+            stream.write("%s = {'next': " % self.failure_node_name(self.flow.name, fail_node))
 
             # print "next_dict"
             stream.write('{')
@@ -174,17 +196,21 @@ class Failures(object):
                 printed = True
             stream.write('}, ')
 
+            conditions = [p.construct_condition_name(self.flow.name, idx) for idx, p in enumerate(fail_node.predicates)]
+            condition_strs = [str(p).replace('\'', '\\\'') for p in fail_node.predicates]
+
             # now list of nodes that should be started in case of failure (fallback)
-            stream.write("'fallback': %s, 'propagate_failure': %s}\n"
-                         % (fail_node.fallback, fail_node.propagate_failure))
+            stream.write("'fallback': %s, 'propagate_failure': %s, 'conditions': %s, 'condition_strs': %s}\n"
+                         % (fail_node.fallbacks, fail_node.propagate_failures,
+                            str(conditions).replace("'", ""), condition_strs))
             fail_node = fail_node.failure_link
 
-        stream.write("\n%s = {" % self.starting_nodes_name(flow_name))
+        stream.write("\n%s = {" % self.starting_nodes_name(self.flow.name))
 
         printed = False
         for key, value in self.starting_nodes.items():
             if printed:
                 stream.write(",")
-            stream.write("\n    '%s': %s" % (key, self.failure_node_name(flow_name, value)))
+            stream.write("\n    '%s': %s" % (key, self.failure_node_name(self.flow.name, value)))
             printed = True
         stream.write("\n}\n\n")
