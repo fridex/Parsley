@@ -6,7 +6,6 @@
 # ######################################################################
 """Edge representation in task/flow dependency graph"""
 
-from .builtinPredicate import AlwaysTruePredicate
 from .helpers import check_conf_keys
 from .predicate import Predicate
 
@@ -165,7 +164,7 @@ class Edge(object):
         if 'condition' in dict_:
             predicate = Predicate.construct(dict_.get('condition'), nodes_from, flow)
         else:
-            predicate = AlwaysTruePredicate(flow=flow)
+            predicate = Predicate.construct_default(flow)
 
         foreach = None
         if 'foreach' in dict_:
